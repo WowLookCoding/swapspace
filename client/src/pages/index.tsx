@@ -1,32 +1,59 @@
 // importing google font for NextJS
 import { getJSONData } from '@/tools/Toolkit';
+import { useState, useEffect, ElementRef } from "react";
+import { Note, Order, Orders, Topping } from "@/tools/orders.model";
+import { data } from 'autoprefixer';
 import { Griffy } from 'next/font/google';
 const griffy = Griffy({weight: "400", subsets: ['latin']});
 
-import { Orders } from "@/tools/orders.model";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 export default function Home() {
   // retrieve server sided script
   const RETRIEVE_SCRIPT:string = "https://www.seanmorrow.ca/_lessons/retrieveOrder.php";
-  
-  // ---------------------------- Event Handlers
+
+  // ------------------------------------------------------------ Event Handlers
 
   const onResponse = (data:Orders) => {
-    console.log(data);
+    setOrderData(data.orders);
+    // Removes the load screen.
+    setShowLoadscreen(false);
   }
-
+  
   const onError = (message:string) => {
     console.log(`*** Error retrieving pizza order data :[ | ${message}`);
   }
   
   const getOrders = (e:any) => {
-    // Fetches the daa from the API.
+    // Shows the load screen.
+    setShowLoadscreen(true);
+    // Fetches the data from the API.
     getJSONData(RETRIEVE_SCRIPT, onResponse, onError);
   }
+  
+  // ------------------------------------------------------------ State Variables
+  
+  const [orderData, setOrderData] = useState<Order[]>([]);
+  const [showSpinner, setShowSpinner] = useState<boolean>(true);
+  const [showLoadscreen, setShowLoadscreen] = useState<boolean>(false);
+  
+  // ------------------------------------------------------------ Use Effects
 
-  // ---------------------------- rendering to DOM
+  // Next:
+  // - Get the icons
+  // - Publish to Vercel, whatever that is.
+
+
+  // ------------------------------------------------------------ Rendering to DOM
+
   return (
     <main className="grid grid-rows-1 grid-cols-1 gap-0 text-content">
+
+      <LoadingOverlay 
+        spinnerColor="#FFFFFF" 
+        bgColor="#b82308" 
+        showSpinner={showSpinner} 
+        enabled={showLoadscreen} />
 
       <div className="flex flex-nowrap items-center justify-center 
           bg-accent bg-[url('./../lib/images/background.jpg')] bg-no-repeat bg-center bg-cover
@@ -65,10 +92,38 @@ export default function Home() {
 
       <div className="bg-greyAccent p-10">
 
-        <div id="output" className="divide-dashed divide-y-2 divide-accent">
+        <div id="output">
 
-          <>No orders retrieved...</>
+          {(orderData[0]) ?  
+            <div className="divide-dashed divide-y-2 divide-accent">
+              {orderData.map(
+                (orderList:Order, i:number) => 
+                  <div key={i} className="py-4">
+                    <header className="text-accent text-2xl font-bold mb-2.5">Order #{orderList.id}:</header>
 
+                    <div className="font-bold"><i className="fas fa-info-circle mr-1"></i>Customer Information</div> 
+                    {orderList.name}<br/>
+                    {orderList.address}<br/>
+                    {orderList.city}<br/>
+
+                    <div className="font-bold"><i className="fas fa-pizza-slice mr-1"></i>Pizza Slice</div> 
+                    {orderList.size}<br/>
+
+                    <div className="font-bold"><i className="fas fa-list-ul mr-1"></i>Order Details</div> 
+                    {orderList.toppings.map(
+                      (t:Topping) => 
+                        <>{t.topping}<br/></>
+                    )}
+
+                    <div className="font-bold"><i className="fas fa-sticky-note mr-1"></i>Order Notes</div> 
+                    {orderList.notes.map(
+                      (n:Note) => 
+                        <>{n.note}<br/></>
+                    )}
+                  </div>
+              )}
+            </div>
+          : <>No orders retrieved...</>}
         </div>
       </div>
     </main>
